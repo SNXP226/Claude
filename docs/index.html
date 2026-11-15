@@ -1,0 +1,378 @@
+<!doctype html>
+<html lang="sv">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, user-scalable=no">
+<title>Skyltkoll</title>
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Skyltkoll">
+<meta name="theme-color" content="#0e1013">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="apple-touch-icon" href="icon-180.png">
+<link rel="icon" href="icon-180.png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@600;700&family=Barlow:wght@400;500&display=swap">
+<style>
+  /* En skärm, mörk som en instrumentpanel: skylten överst, hastigheten under. */
+  :root {
+    --bg: #0e1013;
+    --panel: #171a1f;
+    --fg: #eef1f4;
+    --muted: #8b939e;
+    --sign-red: #d4111e;
+    --sign-white: #ffffff;
+    --warn-bg: #3b0a0d;
+    --warn-fg: #ff5a5f;
+    --notice: #f2c14e;
+    --display: "Barlow Condensed", "Arial Narrow", "Helvetica Neue", Arial, sans-serif;
+    --text: "Barlow", -apple-system, "Helvetica Neue", Arial, sans-serif;
+    color-scheme: dark;
+  }
+  * { box-sizing: border-box; }
+  html, body { height: 100%; margin: 0; }
+  body {
+    background: var(--bg);
+    color: var(--fg);
+    font-family: var(--text);
+    -webkit-user-select: none;
+    user-select: none;
+    -webkit-tap-highlight-color: transparent;
+    transition: background-color .3s ease;
+    overflow: hidden;
+  }
+  body.warn { background: var(--warn-bg); }
+  .screen {
+    height: 100%;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 3vh;
+    padding-top: max(16px, env(safe-area-inset-top));
+    padding-bottom: max(16px, env(safe-area-inset-bottom));
+    padding-left: max(16px, env(safe-area-inset-left));
+    padding-right: max(16px, env(safe-area-inset-right));
+    text-align: center;
+  }
+  .sign {
+    width: min(72vw, 46vh);
+    aspect-ratio: 1;
+    max-width: 100%;
+    border-radius: 50%;
+    background: var(--sign-white);
+    border: calc(min(72vw, 46vh) * 0.11) solid var(--sign-red);
+    display: grid;
+    place-items: center;
+    box-shadow: 0 0 0 3px var(--sign-white), 0 10px 40px rgba(0,0,0,.5);
+  }
+  .sign span {
+    font-family: var(--display);
+    font-weight: 700;
+    font-size: calc(min(72vw, 46vh) * 0.42);
+    line-height: 1;
+    color: #000;
+    letter-spacing: -0.02em;
+    font-variant-numeric: tabular-nums;
+  }
+  .sign.three span { font-size: calc(min(72vw, 46vh) * 0.34); }
+  .sign.unknown span { color: #9aa0a6; }
+  .road {
+    font-family: var(--display);
+    font-weight: 600;
+    font-size: 1.5rem;
+    letter-spacing: 0.02em;
+    color: var(--muted);
+    min-height: 1.8rem;
+    max-width: 100%;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+  .speed {
+    font-family: var(--display);
+    font-weight: 700;
+    font-size: clamp(4rem, 14vh, 8rem);
+    line-height: 1;
+    font-variant-numeric: tabular-nums;
+  }
+  .speed small {
+    font-size: 0.3em;
+    font-weight: 600;
+    color: var(--muted);
+    letter-spacing: 0.06em;
+    margin-left: 0.2em;
+  }
+  body.warn .speed { color: var(--warn-fg); }
+  .status {
+    color: var(--notice);
+    font-size: 1rem;
+    min-height: 1.4rem;
+    max-width: 30ch;
+  }
+  .footer {
+    position: fixed;
+    left: 0; right: 0;
+    bottom: 0;
+    padding-bottom: max(12px, env(safe-area-inset-bottom));
+    padding-left: max(16px, env(safe-area-inset-left));
+    padding-right: max(16px, env(safe-area-inset-right));
+    font-size: 0.75rem;
+    color: var(--muted);
+    text-align: center;
+    opacity: .7;
+  }
+
+  /* Startskärm */
+  .start { gap: 20px; }
+  .start h1 {
+    font-family: var(--display);
+    font-weight: 700;
+    font-size: 2.6rem;
+    margin: 0;
+    letter-spacing: 0.01em;
+  }
+  .start p { margin: 0; color: var(--muted); max-width: 32ch; line-height: 1.5; }
+  .start .mini { width: 96px; border-width: 11px; box-shadow: none; }
+  .start .mini span { font-size: 40px; }
+  button.go {
+    font-family: var(--display);
+    font-weight: 700;
+    font-size: 1.5rem;
+    letter-spacing: 0.04em;
+    color: var(--sign-white);
+    background: var(--sign-red);
+    border: 0;
+    border-radius: 999px;
+    padding: 16px 56px;
+    cursor: pointer;
+  }
+  button.go:focus-visible { outline: 3px solid var(--fg); outline-offset: 3px; }
+  .hint {
+    background: var(--panel);
+    border-radius: 14px;
+    padding: 14px 16px;
+    font-size: 0.95rem;
+    line-height: 1.5;
+    color: var(--fg);
+    max-width: 34ch;
+    text-align: left;
+  }
+  .hint b { color: var(--notice); font-weight: 500; }
+  [hidden] { display: none !important; }
+</style>
+</head>
+<body>
+
+<main class="screen start" id="startScreen">
+  <div class="sign mini" aria-hidden="true"><span>50</span></div>
+  <h1>Skyltkoll</h1>
+  <p>Visar hastighetsgränsen på vägen du kör på. Skärmen blir röd om du kör för fort.</p>
+  <button class="go" id="startBtn" type="button">Starta</button>
+  <div class="hint" id="installHint" hidden>
+    <b>Gör den till en app:</b> tryck på Dela-knappen i Safari (fyrkanten med pilen) och välj <b>Lägg till på hemskärmen</b>.
+  </div>
+</main>
+
+<main class="screen" id="driveScreen" hidden>
+  <div class="sign unknown" id="sign" role="img" aria-label="Hastighetsgräns okänd"><span id="limit">?</span></div>
+  <div class="road" id="road"></div>
+  <div class="speed"><span id="speed">–</span><small>KM/H</small></div>
+  <div class="status" id="status">Letar efter din position…</div>
+</main>
+
+<div class="footer">Kartdata © OpenStreetMap. Lita alltid på skyltarna vid vägen.</div>
+
+<script>
+(function () {
+  'use strict';
+
+  var OVERPASS_URLS = [
+    'https://overpass-api.de/api/interpreter',
+    'https://overpass.private.coffee/api/interpreter'
+  ];
+  var SEARCH_RADIUS_M = 30;
+  var REFETCH_DISTANCE_M = 40;
+  var REFETCH_MAX_AGE_MS = 30000;
+  var MIN_FETCH_GAP_MS = 4000;
+  var CAR_ROADS = '^(motorway|trunk|primary|secondary|tertiary|unclassified|residential|living_street|service)(_link)?$';
+  var SWEDISH_DEFAULTS = { 'SE:urban': 50, 'SE:rural': 70, 'SE:motorway': 110, 'SE:living_street': 7 };
+
+  function distanceMeters(lat1, lon1, lat2, lon2) {
+    var R = 6371000, k = Math.PI / 180;
+    var dLat = (lat2 - lat1) * k, dLon = (lon2 - lon1) * k;
+    var a = Math.pow(Math.sin(dLat / 2), 2) +
+      Math.cos(lat1 * k) * Math.cos(lat2 * k) * Math.pow(Math.sin(dLon / 2), 2);
+    return 2 * R * Math.asin(Math.sqrt(a));
+  }
+
+  function distanceToWay(lat, lon, geometry) {
+    var R = 6371000, k = Math.PI / 180, cosLat = Math.cos(lat * k);
+    function xy(p) { return [(p.lon - lon) * k * R * cosLat, (p.lat - lat) * k * R]; }
+    if (geometry.length === 1) { var q = xy(geometry[0]); return Math.hypot(q[0], q[1]); }
+    var best = Infinity;
+    for (var i = 0; i < geometry.length - 1; i++) {
+      var a = xy(geometry[i]), b = xy(geometry[i + 1]);
+      var dx = b[0] - a[0], dy = b[1] - a[1], len2 = dx * dx + dy * dy;
+      var t = len2 === 0 ? 0 : -(a[0] * dx + a[1] * dy) / len2;
+      t = Math.max(0, Math.min(1, t));
+      var d = Math.hypot(a[0] + t * dx, a[1] + t * dy);
+      if (d < best) best = d;
+    }
+    return best;
+  }
+
+  function parseMaxspeed(value) {
+    if (!value) return null;
+    var v = String(value).split(';')[0].trim();
+    if (SWEDISH_DEFAULTS[v]) return SWEDISH_DEFAULTS[v];
+    var m = v.match(/^(\d+)\s*mph$/i);
+    if (m) return Math.round(Number(m[1]) * 1.609);
+    m = v.match(/^(\d+)$/);
+    if (m) return Number(m[1]);
+    return null;
+  }
+
+  function pickRoad(elements, lat, lon) {
+    var best = null;
+    (elements || []).forEach(function (el) {
+      if (el.type !== 'way' || !el.geometry || !el.geometry.length) return;
+      var d = distanceToWay(lat, lon, el.geometry);
+      var hasLimit = parseMaxspeed(el.tags && el.tags.maxspeed) !== null;
+      var score = d - (hasLimit ? 3 : 0);
+      if (!best || score < best.score) best = { el: el, score: score };
+    });
+    if (!best) return null;
+    var tags = best.el.tags || {};
+    return { limit: parseMaxspeed(tags.maxspeed), name: tags.name || tags.ref || null };
+  }
+
+  window.__skyltkoll = { distanceMeters: distanceMeters, distanceToWay: distanceToWay, parseMaxspeed: parseMaxspeed, pickRoad: pickRoad };
+
+  function fetchWithTimeout(url, body, ms) {
+    var ctrl = new AbortController();
+    var timer = setTimeout(function () { ctrl.abort(); }, ms);
+    return fetch(url, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+      body: body,
+      signal: ctrl.signal
+    }).then(function (res) {
+      clearTimeout(timer);
+      if (!res.ok) throw new Error('HTTP ' + res.status);
+      return res.json();
+    }, function (e) { clearTimeout(timer); throw e; });
+  }
+
+  var serverIndex = 0;
+  function fetchRoad(lat, lon) {
+    var query = '[out:json][timeout:10];way(around:' + SEARCH_RADIUS_M + ',' + lat + ',' + lon +
+      ')[highway~"' + CAR_ROADS + '"];out tags geom;';
+    var body = 'data=' + encodeURIComponent(query);
+    var url = OVERPASS_URLS[serverIndex];
+    return fetchWithTimeout(url, body, 12000).catch(function (e) {
+      // Prova reservservern nästa gång
+      serverIndex = (serverIndex + 1) % OVERPASS_URLS.length;
+      throw e;
+    }).then(function (json) { return pickRoad(json.elements, lat, lon); });
+  }
+
+  // ---- Gränssnitt ----
+  var $ = function (id) { return document.getElementById(id); };
+  var state = { limit: null, speed: null };
+
+  function render() {
+    var sign = $('sign');
+    $('limit').textContent = state.limit === null ? '?' : state.limit;
+    sign.classList.toggle('unknown', state.limit === null);
+    sign.classList.toggle('three', state.limit !== null && state.limit >= 100);
+    sign.setAttribute('aria-label', state.limit === null ? 'Hastighetsgräns okänd' : 'Hastighetsgräns ' + state.limit);
+    $('speed').textContent = state.speed === null ? '–' : state.speed;
+    var tooFast = state.limit !== null && state.speed !== null && state.speed > state.limit + 2;
+    document.body.classList.toggle('warn', tooFast);
+  }
+  function setStatus(t) { $('status').textContent = t || ''; }
+
+  // ---- Håll skärmen tänd ----
+  var wakeLock = null;
+  function keepAwake() {
+    if (!('wakeLock' in navigator)) return;
+    navigator.wakeLock.request('screen').then(function (l) { wakeLock = l; }).catch(function () {});
+  }
+  document.addEventListener('visibilitychange', function () {
+    if (document.visibilityState === 'visible' && !$('driveScreen').hidden) keepAwake();
+  });
+
+  // ---- GPS ----
+  var last = { lat: null, lon: null, time: 0 };
+  var prevPos = null;
+  var fetching = false;
+  var gpsProblem = false;
+
+  function onPosition(pos) {
+    var c = pos.coords, lat = c.latitude, lon = c.longitude, now = Date.now();
+    if (gpsProblem) { gpsProblem = false; setStatus(''); }
+
+    var mps = (typeof c.speed === 'number' && c.speed >= 0) ? c.speed : null;
+    if (mps === null && prevPos) {
+      var dt = (pos.timestamp - prevPos.t) / 1000;
+      if (dt > 0.5 && dt < 10) mps = distanceMeters(prevPos.lat, prevPos.lon, lat, lon) / dt;
+    }
+    prevPos = { lat: lat, lon: lon, t: pos.timestamp };
+    state.speed = mps === null ? null : Math.round(mps * 3.6);
+    render();
+
+    var moved = last.lat === null ? Infinity : distanceMeters(last.lat, last.lon, lat, lon);
+    var age = now - last.time;
+    var due = moved > REFETCH_DISTANCE_M || age > REFETCH_MAX_AGE_MS;
+    if (!due || fetching || age < MIN_FETCH_GAP_MS) return;
+
+    fetching = true;
+    last = { lat: lat, lon: lon, time: now };
+    fetchRoad(lat, lon).then(function (road) {
+      if (road) {
+        state.limit = road.limit;
+        $('road').textContent = road.name || '';
+        setStatus(road.limit === null ? 'Hastigheten saknas i kartan för den här vägen' : '');
+      } else {
+        state.limit = null;
+        $('road').textContent = '';
+        setStatus('Ingen bilväg hittad här');
+      }
+      render();
+    }).catch(function () {
+      setStatus('Ingen kontakt med kartan – försöker igen');
+      last.time = now - REFETCH_MAX_AGE_MS + MIN_FETCH_GAP_MS; // försök igen snart
+    }).then(function () { fetching = false; });
+  }
+
+  function onError(err) {
+    if (err.code === 1) {
+      setStatus('Skyltkoll behöver din plats. Gå till Inställningar → Integritet → Platstjänster → Safari-webbplatser och välj "När appen används".');
+    } else if (state.speed === null && $('road').textContent === '') {
+      gpsProblem = true;
+      setStatus('Hittar ingen GPS-signal just nu…');
+    }
+  }
+
+  function start() {
+    $('startScreen').hidden = true;
+    $('driveScreen').hidden = false;
+    keepAwake();
+    if (!('geolocation' in navigator)) { setStatus('Den här telefonen saknar GPS-stöd.'); return; }
+    navigator.geolocation.watchPosition(onPosition, onError, {
+      enableHighAccuracy: true, maximumAge: 0
+    });
+  }
+
+  $('startBtn').addEventListener('click', start);
+
+  var standalone = window.navigator.standalone === true ||
+    (window.matchMedia && window.matchMedia('(display-mode: standalone)').matches);
+  if (!standalone) $('installHint').hidden = false;
+})();
+</script>
+</body>
+</html>

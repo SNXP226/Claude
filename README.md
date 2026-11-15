@@ -3,7 +3,16 @@
 En iPhone-app som visar hastighetsgränsen på vägen du kör på, plus din egen hastighet.
 Skärmen blir röd om du kör för fort.
 
-## Testa på din iPhone (gratis, ingen Mac behövs)
+## Hemskärmsappen (ingen nedladdning)
+
+Hemskärmsappen finns i mappen `docs/` och visas via GitHub Pages:
+**https://snxp226.github.io/Claude/**
+
+1. Öppna länken i **Safari** på din iPhone.
+2. Tryck på **Dela** (fyrkanten med pilen) och välj **Lägg till på hemskärmen**.
+3. Öppna Skyltkoll från hemskärmen, tryck **Starta** och tillåt platsåtkomst.
+
+## Riktig app: testa med Expo Go (gratis, ingen Mac behövs)
 
 1. Ladda ner appen **Expo Go** från App Store.
 2. Gå till **snack.expo.dev** på en dator.
