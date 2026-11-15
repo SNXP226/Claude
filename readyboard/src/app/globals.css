@@ -1,14 +1,47 @@
 @import "tailwindcss";
+@import "@fontsource-variable/inter";
+@import "@fontsource-variable/bricolage-grotesque";
 
 @theme {
+  --font-sans: "Inter Variable", system-ui, -apple-system, "Segoe UI", sans-serif;
+  --font-display: "Bricolage Grotesque Variable", "Inter Variable", system-ui, sans-serif;
+  --color-ink: #16130f;
+  --color-paper: #f6f3ee;
   --color-brand: #e4572e;
 }
 
 html, body {
-  background: #fafaf9;
-  color: #1c1917;
-  font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  background: var(--color-paper);
+  color: var(--color-ink);
+  font-family: var(--font-sans);
   -webkit-tap-highlight-color: transparent;
+  font-feature-settings: "cv11", "ss01";
 }
 
-button { touch-action: manipulation; }
+button { touch-action: manipulation; -webkit-user-select: none; user-select: none; }
+
+.num { font-family: var(--font-display); font-variant-numeric: tabular-nums; letter-spacing: -0.03em; }
+
+@keyframes pop-in {
+  0% { transform: scale(0.6); opacity: 0; }
+  70% { transform: scale(1.06); opacity: 1; }
+  100% { transform: scale(1); }
+}
+.pop-in { animation: pop-in 320ms cubic-bezier(.2,.9,.3,1.2) both; }
+
+@keyframes slide-up {
+  from { transform: translate(-50%, 24px); opacity: 0; }
+  to { transform: translate(-50%, 0); opacity: 1; }
+}
+.toast-in { animation: slide-up 220ms ease-out both; }
+
+@keyframes pulse-dot {
+  0%, 100% { box-shadow: 0 0 0 0 rgb(34 197 94 / 0.6); }
+  50% { box-shadow: 0 0 0 6px rgb(34 197 94 / 0); }
+}
+.live-dot { animation: pulse-dot 2s ease-in-out infinite; }
+
+.grain {
+  background-image: radial-gradient(rgb(0 0 0 / 0.035) 1px, transparent 1px);
+  background-size: 4px 4px;
+}

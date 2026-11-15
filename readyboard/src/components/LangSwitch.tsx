@@ -2,18 +2,20 @@
 import { languages, messages } from "@/i18n";
 import { useLang } from "@/i18n/LangProvider";
 
-// Small language buttons shown on the login and sign-up pages.
-export default function LangSwitch() {
+// Language toggle shown on the login and sign-up pages.
+export default function LangSwitch({ dark = false }: { dark?: boolean }) {
   const { lang, setLang } = useLang();
   return (
-    <div className="flex justify-center gap-2">
+    <div className={`inline-flex rounded-full p-1 ${dark ? "bg-white/10" : "bg-stone-200/70"}`}>
       {languages.map((l) => (
         <button
           key={l}
           type="button"
           onClick={() => setLang(l)}
-          className={`rounded-full px-4 py-2 text-sm font-medium ${
-            l === lang ? "bg-stone-900 text-white" : "bg-stone-200 text-stone-700"
+          className={`rounded-full px-3 py-1.5 text-xs font-semibold transition sm:px-4 sm:py-2 sm:text-sm ${
+            l === lang
+              ? dark ? "bg-white text-ink" : "bg-white text-ink shadow-sm"
+              : dark ? "text-white/70" : "text-stone-600"
           }`}
         >
           {messages[l].languageName}

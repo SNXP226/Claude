@@ -18,3 +18,8 @@ export function getMessages(lang: string | null | undefined): Messages {
 export function isLang(x: unknown): x is Lang {
   return typeof x === "string" && x in messages;
 }
+
+// Fills in {n}-style placeholders, e.g. fill("Order {n}", { n: 5 }) -> "Order 5"
+export function fill(text: string, values: Record<string, string | number>) {
+  return text.replace(/\{(\w+)\}/g, (_, k) => String(values[k] ?? ""));
+}
