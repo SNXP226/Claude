@@ -1,6 +1,6 @@
 "use client";
 import { useCallback, useEffect, useRef, useState } from "react";
-import { Check, ChefHat, LogOut, MoreHorizontal, Plus, RotateCcw, Undo2 } from "lucide-react";
+import { Check, ChefHat, LogOut, MonitorPlay, MoreHorizontal, Plus, RotateCcw, Undo2 } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
 import { useLang, useT } from "@/i18n/LangProvider";
 import { fill, isLang } from "@/i18n";
@@ -173,6 +173,7 @@ export default function StaffPage() {
             <>
               <div className="fixed inset-0 z-10" onClick={() => setMenuOpen(false)} />
               <div className="absolute right-0 z-20 mt-2 w-64 overflow-hidden rounded-2xl bg-white p-1.5 shadow-xl ring-1 ring-stone-900/10">
+                <MenuItem icon={<MonitorPlay className="h-5 w-5" />} onClick={() => { setMenuOpen(false); if (truck) window.open(`/d/${truck.slug}`, "_blank"); }}>{t.staff.openDisplay}</MenuItem>
                 <MenuItem icon={<RotateCcw className="h-5 w-5" />} onClick={reset}>{t.staff.resetNumbers}</MenuItem>
                 <MenuItem icon={<LogOut className="h-5 w-5" />} onClick={logout}>{t.common.logout}</MenuItem>
               </div>
