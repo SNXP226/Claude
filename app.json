@@ -1,0 +1,23 @@
+{
+  "expo": {
+    "name": "Skyltkoll",
+    "slug": "skyltkoll",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "userInterfaceStyle": "dark",
+    "ios": {
+      "bundleIdentifier": "net.auralismedia.skyltkoll",
+      "infoPlist": {
+        "NSLocationWhenInUseUsageDescription": "Skyltkoll använder din plats för att visa hastighetsgränsen på vägen du kör på."
+      }
+    },
+    "plugins": [
+      [
+        "expo-location",
+        {
+          "locationWhenInUsePermission": "Skyltkoll använder din plats för att visa hastighetsgränsen på vägen du kör på."
+        }
+      ]
+    ]
+  }
+}
