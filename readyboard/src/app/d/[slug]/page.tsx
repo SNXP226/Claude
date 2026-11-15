@@ -1,7 +1,7 @@
 "use client";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { useParams } from "next/navigation";
-import { Bell, ChefHat, Maximize, WifiOff } from "lucide-react";
+import { Play, WifiOff } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
 import { getMessages } from "@/i18n";
 import { playChime, unlockAudio } from "@/lib/chime";
@@ -130,55 +130,43 @@ export default function DisplayPage() {
   const preparing = data?.preparing ?? [];
 
   return (
-    <main
-      className="relative flex h-dvh flex-col overflow-hidden bg-[#0f0d0b] text-white"
-      style={{ ["--brand" as string]: brand }}
-    >
-      {/* Soft brand glow in the background */}
-      <div className="pointer-events-none absolute -left-[20%] -top-[30%] h-[80%] w-[60%] rounded-full opacity-25 blur-[120px]" style={{ backgroundColor: brand }} />
-
+    <main className="relative flex h-dvh flex-col overflow-hidden bg-[#0a0a0a] text-white">
       {/* Header */}
-      <header className="relative flex items-center gap-[2vmin] px-[3vmin] py-[2vmin]">
+      <header className="flex items-center gap-[2vmin] px-[3.5vmin] pb-[1.5vmin] pt-[3vmin]">
         {data?.logo_url ? (
           // eslint-disable-next-line @next/next/no-img-element
-          <img src={data.logo_url} alt="" className="h-[9vmin] w-[9vmin] rounded-[2vmin] bg-white object-contain" />
+          <img src={data.logo_url} alt="" className="h-[8vmin] w-[8vmin] rounded-[1.8vmin] bg-white object-contain" />
         ) : (
-          <div className="grid h-[9vmin] w-[9vmin] place-items-center rounded-[2vmin] font-display text-[5vmin] font-extrabold" style={{ backgroundColor: brand }}>
+          <div className="grid h-[8vmin] w-[8vmin] place-items-center rounded-[1.8vmin] bg-white/10 text-[4.2vmin] font-semibold" style={{ color: brand }}>
             {data?.name?.[0]?.toUpperCase() ?? ""}
           </div>
         )}
-        <h1 className="min-w-0 flex-1 truncate font-display text-[6vmin] font-extrabold tracking-tight">{data?.name ?? ""}</h1>
+        <h1 className="min-w-0 flex-1 truncate text-[5vmin] font-semibold tracking-tight">{data?.name ?? ""}</h1>
         {!online && (
-          <div className="flex items-center gap-2 rounded-full bg-red-500/20 px-4 py-2 text-[2.2vmin] font-semibold text-red-200">
-            <WifiOff className="h-[3vmin] w-[3vmin]" /> {t.offline}
+          <div className="flex items-center gap-2 rounded-full border border-red-500/30 bg-red-500/10 px-4 py-2 text-[2vmin] font-medium text-red-300">
+            <WifiOff className="h-[2.6vmin] w-[2.6vmin]" /> {t.offline}
           </div>
         )}
       </header>
 
       {/* Columns */}
-      <div className="relative grid min-h-0 flex-1 grid-rows-[minmax(0,1fr)_minmax(0,1.6fr)] gap-[2vmin] px-[3vmin] pb-[3vmin] landscape:grid-cols-[1fr_1.6fr] landscape:grid-rows-1">
-        <section className="flex min-h-0 flex-col rounded-[3vmin] bg-white/[0.05] p-[3vmin] ring-1 ring-white/10">
-          <h2 className="flex items-center gap-[1.5vmin] text-[3.6vmin] font-bold uppercase tracking-[0.15em] text-amber-300">
-            <ChefHat className="h-[4.5vmin] w-[4.5vmin]" /> {t.preparing}
+      <div className="grid min-h-0 flex-1 grid-rows-[minmax(0,1fr)_minmax(0,1.6fr)] gap-[2vmin] px-[3.5vmin] pb-[3.5vmin] landscape:grid-cols-[1fr_1.6fr] landscape:grid-rows-1">
+        <section className="flex min-h-0 flex-col rounded-[2.5vmin] border border-white/10 p-[3.5vmin]">
+          <h2 className="flex items-center gap-[1.5vmin] text-[2.6vmin] font-medium uppercase tracking-[0.25em] text-zinc-500">
+            <span className="h-[1.4vmin] w-[1.4vmin] rounded-full bg-amber-400" /> {t.preparing}
           </h2>
-          <div className={`num mt-[2vmin] flex min-h-0 flex-1 flex-wrap content-start gap-x-[4vmin] gap-y-[1vmin] font-extrabold leading-none text-white/75 ${sizeFor(preparing.length, false)}`}>
+          <div className={`num mt-[3vmin] flex min-h-0 flex-1 flex-wrap content-start gap-x-[4vmin] gap-y-[1.5vmin] font-semibold leading-none text-zinc-500 ${sizeFor(preparing.length, false)}`}>
             {preparing.map((n) => <span key={n} className="pop-in">{n}</span>)}
           </div>
         </section>
 
-        <section
-          className="flex min-h-0 flex-col rounded-[3vmin] p-[3vmin] text-white shadow-2xl"
-          style={{ background: `linear-gradient(145deg, #10b981, #047857)` }}
-        >
-          <h2 className="flex items-center gap-[1.5vmin] text-[3.6vmin] font-bold uppercase tracking-[0.15em] text-white/85">
-            <Bell className="h-[4.5vmin] w-[4.5vmin]" /> {t.ready}
+        <section className="flex min-h-0 flex-col rounded-[2.5vmin] bg-white/[0.06] p-[3.5vmin] ring-1 ring-white/10">
+          <h2 className="flex items-center gap-[1.5vmin] text-[2.6vmin] font-medium uppercase tracking-[0.25em] text-zinc-300">
+            <span className="h-[1.4vmin] w-[1.4vmin] rounded-full bg-green-500 live-dot" /> {t.ready}
           </h2>
-          <div className={`num mt-[2vmin] flex min-h-0 flex-1 flex-wrap content-start gap-[2.5vmin] font-extrabold leading-none ${sizeFor(ready.length, true)}`}>
+          <div className={`num mt-[2.5vmin] flex min-h-0 flex-1 flex-wrap content-start gap-[1.5vmin] font-semibold leading-none ${sizeFor(ready.length, true)}`}>
             {ready.map((n) => (
-              <span
-                key={n}
-                className={`pop-in rounded-[2.5vmin] px-[2vmin] py-[1vmin] ${flashing.has(n) ? "ready-flash ready-glow bg-white text-emerald-700" : ""}`}
-              >
+              <span key={n} className={`pop-in rounded-[2vmin] px-[2vmin] py-[1.2vmin] ${flashing.has(n) ? "ready-flash" : ""}`}>
                 {n}
               </span>
             ))}
@@ -188,11 +176,13 @@ export default function DisplayPage() {
 
       {/* Tap to start (needed for sound and fullscreen) */}
       {!started && (
-        <button onClick={start} className="absolute inset-0 z-20 grid place-items-center bg-black/70 backdrop-blur-sm">
-          <span className="flex flex-col items-center gap-4 rounded-[4vmin] bg-white px-[6vmin] py-[5vmin] text-ink shadow-2xl">
-            <Maximize className="h-[8vmin] w-[8vmin]" style={{ color: brand }} />
-            <span className="font-display text-[5vmin] font-extrabold">{t.tapToStart}</span>
-            <span className="text-[2.6vmin] text-stone-500">{t.tapToStartHint}</span>
+        <button onClick={start} className="absolute inset-0 z-20 grid place-items-center bg-black/80 backdrop-blur-md">
+          <span className="flex flex-col items-center gap-[2vmin] rounded-[3vmin] border border-white/10 bg-zinc-900 px-[7vmin] py-[5vmin] text-white shadow-2xl">
+            <span className="grid h-[11vmin] w-[11vmin] place-items-center rounded-full bg-white text-ink">
+              <Play className="ml-[0.6vmin] h-[5vmin] w-[5vmin]" fill="currentColor" />
+            </span>
+            <span className="text-[4.2vmin] font-semibold tracking-tight">{t.tapToStart}</span>
+            <span className="text-[2.2vmin] text-zinc-400">{t.tapToStartHint}</span>
           </span>
         </button>
       )}

@@ -1,13 +1,11 @@
 @import "tailwindcss";
-@import "@fontsource-variable/inter";
-@import "@fontsource-variable/bricolage-grotesque";
+@import "@fontsource-variable/geist";
 
 @theme {
-  --font-sans: "Inter Variable", system-ui, -apple-system, "Segoe UI", sans-serif;
-  --font-display: "Bricolage Grotesque Variable", "Inter Variable", system-ui, sans-serif;
-  --color-ink: #16130f;
-  --color-paper: #f6f3ee;
-  --color-brand: #e4572e;
+  --font-sans: "Geist Variable", system-ui, -apple-system, "Segoe UI", sans-serif;
+  --font-display: "Geist Variable", system-ui, sans-serif;
+  --color-ink: #0a0a0a;
+  --color-paper: #fafafa;
 }
 
 html, body {
@@ -15,45 +13,68 @@ html, body {
   color: var(--color-ink);
   font-family: var(--font-sans);
   -webkit-tap-highlight-color: transparent;
-  font-feature-settings: "cv11", "ss01";
+  -webkit-font-smoothing: antialiased;
 }
 
 button { touch-action: manipulation; -webkit-user-select: none; user-select: none; }
 
-.num { font-family: var(--font-display); font-variant-numeric: tabular-nums; letter-spacing: -0.03em; }
+.num { font-variant-numeric: tabular-nums; letter-spacing: -0.04em; }
 
 @keyframes pop-in {
-  0% { transform: scale(0.6); opacity: 0; }
-  70% { transform: scale(1.06); opacity: 1; }
-  100% { transform: scale(1); }
+  0% { transform: scale(0.85); opacity: 0; }
+  100% { transform: scale(1); opacity: 1; }
 }
-.pop-in { animation: pop-in 320ms cubic-bezier(.2,.9,.3,1.2) both; }
+.pop-in { animation: pop-in 260ms cubic-bezier(.2,.8,.2,1) both; }
 
 @keyframes slide-up {
-  from { transform: translate(-50%, 24px); opacity: 0; }
+  from { transform: translate(-50%, 16px); opacity: 0; }
   to { transform: translate(-50%, 0); opacity: 1; }
 }
-.toast-in { animation: slide-up 220ms ease-out both; }
+.toast-in { animation: slide-up 200ms ease-out both; }
 
 @keyframes pulse-dot {
-  0%, 100% { box-shadow: 0 0 0 0 rgb(34 197 94 / 0.6); }
-  50% { box-shadow: 0 0 0 6px rgb(34 197 94 / 0); }
+  0%, 100% { box-shadow: 0 0 0 0 rgb(34 197 94 / 0.5); }
+  50% { box-shadow: 0 0 0 5px rgb(34 197 94 / 0); }
 }
 .live-dot { animation: pulse-dot 2s ease-in-out infinite; }
 
-.grain {
-  background-image: radial-gradient(rgb(0 0 0 / 0.035) 1px, transparent 1px);
-  background-size: 4px 4px;
-}
-
+/* Customer screen: a number that just became ready */
 @keyframes ready-flash {
-  0%, 100% { transform: scale(1); }
-  10%, 30%, 50% { transform: scale(1.12); filter: brightness(1.35); }
-  20%, 40% { transform: scale(1); filter: brightness(1); }
+  0%, 40%, 80% { background: #fff; color: #0a0a0a; transform: scale(1.06); }
+  20%, 60%, 100% { background: transparent; color: #fff; transform: scale(1); }
 }
-.ready-flash { animation: ready-flash 2.4s ease-in-out 1; }
-@keyframes glow {
-  0%, 100% { box-shadow: 0 0 0 0 rgb(255 255 255 / 0.0); }
-  50% { box-shadow: 0 0 0 10px rgb(255 255 255 / 0.25); }
+.ready-flash { animation: ready-flash 2.4s ease-in-out 2; }
+
+/* ===== Splash screen ===== */
+.splash {
+  position: fixed; inset: 0; z-index: 100;
+  display: grid; place-items: center;
+  background: #0a0a0a; color: #fff;
+  animation: splash-out 450ms ease-in 2.6s forwards;
 }
-.ready-glow { animation: glow 1.2s ease-in-out 4; }
+html.no-splash .splash { display: none; }
+@keyframes splash-out { to { opacity: 0; visibility: hidden; } }
+
+.splash-mark { animation: mark-in 700ms cubic-bezier(.2,.9,.2,1) 150ms both; }
+@keyframes mark-in {
+  from { transform: scale(0.6) rotate(-8deg); opacity: 0; }
+  to { transform: scale(1) rotate(0); opacity: 1; }
+}
+.splash-dot { animation: dot-ping 1.2s ease-out 800ms 2 both; }
+@keyframes dot-ping {
+  0% { transform: scale(0); opacity: 1; }
+  70% { transform: scale(2.2); opacity: 0; }
+  100% { opacity: 0; }
+}
+.splash-word { animation: word-in 600ms cubic-bezier(.2,.8,.2,1) 550ms both; }
+@keyframes word-in {
+  from { transform: translateY(10px); opacity: 0; filter: blur(6px); }
+  to { transform: none; opacity: 1; filter: none; }
+}
+.splash-bar { animation: bar-fill 1.9s cubic-bezier(.6,0,.2,1) 650ms both; transform-origin: left; }
+@keyframes bar-fill { from { transform: scaleX(0); } to { transform: scaleX(1); } }
+
+@media (prefers-reduced-motion: reduce) {
+  .splash { animation-delay: 0.8s; }
+  .splash-mark, .splash-word, .splash-bar, .splash-dot { animation-duration: 1ms; animation-delay: 0s; }
+}

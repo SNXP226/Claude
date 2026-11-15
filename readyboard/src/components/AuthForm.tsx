@@ -4,7 +4,8 @@ import { useState } from "react";
 import { createClient } from "@/lib/supabase/client";
 import { useLang, useT } from "@/i18n/LangProvider";
 import LangSwitch from "./LangSwitch";
-import { ArrowRight, BellRing, Loader2 } from "lucide-react";
+import { ArrowRight, Loader2 } from "lucide-react";
+import { Logo } from "./Logo";
 import { BigButton, ErrorBox, Field } from "./ui";
 
 export default function AuthForm({ mode }: { mode: "login" | "signup" }) {
@@ -58,32 +59,22 @@ export default function AuthForm({ mode }: { mode: "login" | "signup" }) {
   }
 
   return (
-    <main className="min-h-dvh lg:grid lg:grid-cols-2">
-      {/* Hero */}
-      <section className="relative overflow-hidden bg-ink px-6 pb-24 pt-8 text-white lg:flex lg:flex-col lg:justify-between lg:p-12">
-        <div className="pointer-events-none absolute -right-24 -top-24 h-72 w-72 rounded-full bg-brand/40 blur-3xl" />
-        <div className="pointer-events-none absolute -bottom-32 -left-16 h-72 w-72 rounded-full bg-emerald-500/20 blur-3xl" />
-        <div className="relative flex items-center justify-between">
+    <main className="min-h-dvh lg:grid lg:grid-cols-[1fr_1.1fr]">
+      {/* Form side */}
+      <section className="flex min-h-dvh flex-col px-5 py-6 sm:px-10">
+        <div className="flex items-center justify-between">
           <Logo />
-          <LangSwitch dark />
+          <LangSwitch />
         </div>
-        <div className="relative mt-10 lg:mt-0">
-          <h1 className="font-display text-4xl font-extrabold leading-[1.05] tracking-tight sm:text-5xl">{t.auth.tagline}</h1>
-          <BoardPreview preparing={t.staff.preparing} ready={t.staff.ready} />
-        </div>
-        <p className="relative hidden text-sm text-white/50 lg:block">© {new Date().getFullYear()} ReadyBoard</p>
-      </section>
-
-      {/* Form */}
-      <section className="relative -mt-16 px-4 pb-10 lg:mt-0 lg:flex lg:items-center lg:justify-center lg:px-12">
-        <div className="mx-auto w-full max-w-md">
-          <form onSubmit={submit} className="flex flex-col gap-4 rounded-[28px] bg-white p-6 shadow-[0_20px_50px_-20px_rgb(0_0_0/0.25)] ring-1 ring-stone-900/5 sm:p-8">
-            <h2 className="font-display text-3xl font-extrabold tracking-tight">{signup ? t.auth.signupTitle : t.auth.loginTitle}</h2>
+        <div className="mx-auto flex w-full max-w-sm flex-1 flex-col justify-center py-10">
+          <h1 className="text-3xl font-semibold tracking-tight">{signup ? t.auth.signupTitle : t.auth.loginTitle}</h1>
+          <p className="mt-2 text-base text-zinc-500">{t.auth.tagline}</p>
+          <form onSubmit={submit} className="mt-8 flex flex-col gap-4">
             {signup && (
-              <div className="grid gap-4 sm:grid-cols-2">
+              <>
                 <Field label={t.auth.truckName} value={truckName} onChange={(e) => setTruckName(e.target.value)} required maxLength={80} autoComplete="organization" />
                 <Field label={t.auth.city} value={city} onChange={(e) => setCity(e.target.value)} required maxLength={80} autoComplete="address-level2" />
-              </div>
+              </>
             )}
             <Field label={t.auth.email} type="email" value={email} onChange={(e) => setEmail(e.target.value)} required autoComplete="email" inputMode="email" />
             <Field
@@ -97,50 +88,49 @@ export default function AuthForm({ mode }: { mode: "login" | "signup" }) {
               autoComplete={signup ? "new-password" : "current-password"}
             />
             {error && <ErrorBox>{error}</ErrorBox>}
-            {info && <p className="rounded-2xl bg-emerald-50 px-4 py-3 text-base font-medium text-emerald-800 ring-1 ring-emerald-200">{info}</p>}
-            <BigButton type="submit" disabled={busy} className="mt-1 flex items-center justify-center gap-2">
-              {busy ? <Loader2 className="h-5 w-5 animate-spin" /> : null}
+            {info && <p className="rounded-xl border border-green-200 bg-green-50 px-4 py-3 text-sm font-medium text-green-800">{info}</p>}
+            <BigButton type="submit" disabled={busy} className="mt-2 flex items-center justify-center gap-2">
+              {busy && <Loader2 className="h-4 w-4 animate-spin" />}
               {busy ? t.common.loading : signup ? t.auth.signupButton : t.auth.loginButton}
-              {!busy && <ArrowRight className="h-5 w-5" />}
+              {!busy && <ArrowRight className="h-4 w-4" />}
             </BigButton>
           </form>
-          <p className="mt-6 text-center text-base text-stone-600">
+          <p className="mt-8 text-center text-sm text-zinc-500">
             {signup ? t.auth.haveAccount : t.auth.noAccount}{" "}
-            <Link href={signup ? "/login" : "/signup"} className="font-bold text-ink underline decoration-brand decoration-2 underline-offset-4">
+            <Link href={signup ? "/login" : "/signup"} className="font-semibold text-ink underline underline-offset-4">
               {signup ? t.auth.toLogin : t.auth.toSignup}
             </Link>
           </p>
         </div>
       </section>
+
+      {/* Preview side (large screens only) */}
+      <section className="relative hidden overflow-hidden bg-ink p-12 lg:flex lg:flex-col lg:justify-center">
+        <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_30%_20%,rgb(255_255_255/0.08),transparent_60%)]" />
+        <BoardPreview preparing={t.staff.preparing} ready={t.display.ready} />
+      </section>
     </main>
   );
 }
 
-function Logo() {
-  return (
-    <div className="flex items-center gap-2.5">
-      <div className="grid h-9 w-9 place-items-center rounded-xl bg-brand shadow-lg shadow-brand/30">
-        <BellRing className="h-5 w-5 text-white" />
-      </div>
-      <span className="font-display text-xl font-extrabold tracking-tight">ReadyBoard</span>
-    </div>
-  );
-}
-
-// A small, animated picture of the customer screen.
+// A small picture of the customer screen.
 function BoardPreview({ preparing, ready }: { preparing: string; ready: string }) {
   return (
-    <div className="mt-8 grid grid-cols-2 gap-3 rounded-3xl bg-white/[0.06] p-3 ring-1 ring-white/10 backdrop-blur">
-      <div className="rounded-2xl bg-white/[0.04] p-4">
-        <p className="text-xs font-bold uppercase tracking-widest text-amber-300">{preparing}</p>
-        <div className="num mt-2 flex flex-wrap gap-x-4 text-3xl font-extrabold text-white/80">
-          <span>47</span><span>48</span><span>51</span>
+    <div className="relative mx-auto w-full max-w-lg rounded-3xl border border-white/10 bg-white/[0.03] p-3 shadow-2xl">
+      <div className="grid grid-cols-[1fr_1.4fr] gap-3">
+        <div className="rounded-2xl border border-white/10 p-5">
+          <p className="text-[11px] font-medium uppercase tracking-[0.2em] text-zinc-500">{preparing}</p>
+          <div className="num mt-4 flex flex-wrap gap-x-4 gap-y-1 text-3xl font-semibold text-zinc-500">
+            <span>47</span><span>48</span><span>51</span>
+          </div>
         </div>
-      </div>
-      <div className="rounded-2xl bg-emerald-500 p-4 text-ink">
-        <p className="text-xs font-bold uppercase tracking-widest text-emerald-950/70">{ready}</p>
-        <div className="num mt-2 flex flex-wrap gap-x-4 text-3xl font-extrabold">
-          <span className="animate-pulse">46</span><span>44</span>
+        <div className="rounded-2xl bg-white/[0.06] p-5">
+          <p className="flex items-center gap-2 text-[11px] font-medium uppercase tracking-[0.2em] text-zinc-300">
+            <span className="h-1.5 w-1.5 rounded-full bg-green-500" />{ready}
+          </p>
+          <div className="num mt-4 flex flex-wrap gap-x-5 text-5xl font-semibold text-white">
+            <span>46</span><span>44</span>
+          </div>
         </div>
       </div>
     </div>
