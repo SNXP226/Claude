@@ -189,16 +189,11 @@
 (function () {
   'use strict';
 
-  var OVERPASS_URLS = [
-    'https://overpass-api.de/api/interpreter',
-    'https://overpass.private.coffee/api/interpreter'
-  ];
+  // Kartdata ligger bredvid appen i små rutor: tiles/<lat-index>/<lon-index>.json
+  var TILE_LAT = 0.05, TILE_LON = 0.1, SCALE = 100000;
   var SEARCH_RADIUS_M = 30;
-  var REFETCH_DISTANCE_M = 40;
-  var REFETCH_MAX_AGE_MS = 30000;
-  var MIN_FETCH_GAP_MS = 4000;
-  var CAR_ROADS = '^(motorway|trunk|primary|secondary|tertiary|unclassified|residential|living_street|service)(_link)?$';
-  var SWEDISH_DEFAULTS = { 'SE:urban': 50, 'SE:rural': 70, 'SE:motorway': 110, 'SE:living_street': 7 };
+  var EDGE_MARGIN = 0.0006; // ca 60 m: hämta grannrutan när vi är nära kanten
+  var RETRY_MS = 5000;
 
   function distanceMeters(lat1, lon1, lat2, lon2) {
     var R = 6371000, k = Math.PI / 180;
@@ -224,60 +219,77 @@
     return best;
   }
 
-  function parseMaxspeed(value) {
-    if (!value) return null;
-    var v = String(value).split(';')[0].trim();
-    if (SWEDISH_DEFAULTS[v]) return SWEDISH_DEFAULTS[v];
-    var m = v.match(/^(\d+)\s*mph$/i);
-    if (m) return Math.round(Number(m[1]) * 1.609);
-    m = v.match(/^(\d+)$/);
-    if (m) return Number(m[1]);
-    return null;
-  }
-
-  function pickRoad(elements, lat, lon) {
-    var best = null;
-    (elements || []).forEach(function (el) {
-      if (el.type !== 'way' || !el.geometry || !el.geometry.length) return;
-      var d = distanceToWay(lat, lon, el.geometry);
-      var hasLimit = parseMaxspeed(el.tags && el.tags.maxspeed) !== null;
-      var score = d - (hasLimit ? 3 : 0);
-      if (!best || score < best.score) best = { el: el, score: score };
+  function decodeTile(json, ty, tx) {
+    var baseLat = Math.round(ty * TILE_LAT * SCALE), baseLon = Math.round(tx * TILE_LON * SCALE);
+    return (json.ways || []).map(function (row) {
+      var geom = [], minLat = Infinity, maxLat = -Infinity, minLon = Infinity, maxLon = -Infinity;
+      for (var j = 2; j + 1 < row.length; j += 2) {
+        var lat = (row[j] + baseLat) / SCALE, lon = (row[j + 1] + baseLon) / SCALE;
+        geom.push({ lat: lat, lon: lon });
+        if (lat < minLat) minLat = lat; if (lat > maxLat) maxLat = lat;
+        if (lon < minLon) minLon = lon; if (lon > maxLon) maxLon = lon;
+      }
+      return {
+        limit: row[0] > 0 ? row[0] : null,
+        name: row[1] >= 0 ? json.names[row[1]] : null,
+        geometry: geom, minLat: minLat, maxLat: maxLat, minLon: minLon, maxLon: maxLon
+      };
     });
-    if (!best) return null;
-    var tags = best.el.tags || {};
-    return { limit: parseMaxspeed(tags.maxspeed), name: tags.name || tags.ref || null };
   }
 
-  window.__skyltkoll = { distanceMeters: distanceMeters, distanceToWay: distanceToWay, parseMaxspeed: parseMaxspeed, pickRoad: pickRoad };
+  // Väljer närmaste väg. Föredrar vägen vi just var på, så att den inte hoppar i korsningar.
+  function pickRoad(ways, lat, lon, previous) {
+    var padLat = 0.0004, padLon = 0.0008;
+    var best = null;
+    for (var i = 0; i < ways.length; i++) {
+      var w = ways[i];
+      if (lat < w.minLat - padLat || lat > w.maxLat + padLat ||
+          lon < w.minLon - padLon || lon > w.maxLon + padLon) continue;
+      var d = distanceToWay(lat, lon, w.geometry);
+      if (d > SEARCH_RADIUS_M) continue;
+      var score = d - (w.limit !== null ? 3 : 0);
+      if (previous && previous.name === w.name && previous.limit === w.limit) score -= 5;
+      if (!best || score < best.score) best = { way: w, score: score };
+    }
+    return best ? { limit: best.way.limit, name: best.way.name } : null;
+  }
 
-  function fetchWithTimeout(url, body, ms) {
-    var ctrl = new AbortController();
-    var timer = setTimeout(function () { ctrl.abort(); }, ms);
-    return fetch(url, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-      body: body,
-      signal: ctrl.signal
-    }).then(function (res) {
-      clearTimeout(timer);
+  var tileData = new Map();   // nyckel -> vägar
+  var tileLoading = new Map(); // nyckel -> Promise
+  var tileFailedAt = new Map();
+
+  function loadTile(ty, tx) {
+    var key = ty + '/' + tx;
+    if (tileLoading.has(key)) return tileLoading.get(key);
+    var p = fetch('tiles/' + key + '.json').then(function (res) {
+      if (res.status === 404) return []; // inga bilvägar i den här rutan
       if (!res.ok) throw new Error('HTTP ' + res.status);
-      return res.json();
-    }, function (e) { clearTimeout(timer); throw e; });
+      return res.json().then(function (j) { return decodeTile(j, ty, tx); });
+    }).then(function (ways) {
+      tileData.set(key, ways);
+      tileLoading.delete(key);
+      return ways;
+    }, function (e) {
+      tileLoading.delete(key);
+      tileFailedAt.set(key, Date.now());
+      throw e;
+    });
+    tileLoading.set(key, p);
+    return p;
   }
 
-  var serverIndex = 0;
-  function fetchRoad(lat, lon) {
-    var query = '[out:json][timeout:10];way(around:' + SEARCH_RADIUS_M + ',' + lat + ',' + lon +
-      ')[highway~"' + CAR_ROADS + '"];out tags geom;';
-    var body = 'data=' + encodeURIComponent(query);
-    var url = OVERPASS_URLS[serverIndex];
-    return fetchWithTimeout(url, body, 12000).catch(function (e) {
-      // Prova reservservern nästa gång
-      serverIndex = (serverIndex + 1) % OVERPASS_URLS.length;
-      throw e;
-    }).then(function (json) { return pickRoad(json.elements, lat, lon); });
+  function neededTiles(lat, lon) {
+    var out = {}, d = [-EDGE_MARGIN, 0, EDGE_MARGIN];
+    d.forEach(function (dy) {
+      d.forEach(function (dx) {
+        var ty = Math.floor((lat + dy) / TILE_LAT), tx = Math.floor((lon + 2 * dx) / TILE_LON);
+        out[ty + '/' + tx] = [ty, tx];
+      });
+    });
+    return Object.keys(out).map(function (k) { return out[k]; });
   }
+
+  window.__skyltkoll = { distanceMeters: distanceMeters, distanceToWay: distanceToWay, decodeTile: decodeTile, pickRoad: pickRoad, neededTiles: neededTiles };
 
   // ---- Gränssnitt ----
   var $ = function (id) { return document.getElementById(id); };
@@ -306,13 +318,39 @@
   });
 
   // ---- GPS ----
-  var last = { lat: null, lon: null, time: 0 };
   var prevPos = null;
-  var fetching = false;
+  var lastPos = null;
+  var current = null;
   var gpsProblem = false;
+  var dataMissing = false;
+
+  function updateRoad() {
+    if (!lastPos || dataMissing) return;
+    var tiles = neededTiles(lastPos.lat, lastPos.lon);
+    var ways = [], ready = true;
+    tiles.forEach(function (t) {
+      var key = t[0] + '/' + t[1];
+      var w = tileData.get(key);
+      if (w) { ways = ways.concat(w); return; }
+      ready = false;
+      var failed = tileFailedAt.get(key);
+      if (failed && Date.now() - failed < RETRY_MS) return;
+      loadTile(t[0], t[1]).then(updateRoad, function () {
+        setStatus('Kunde inte hämta kartdata – försöker igen');
+      });
+    });
+    var road = pickRoad(ways, lastPos.lat, lastPos.lon, current);
+    if (!road && !ready) { if (!current) setStatus('Laddar kartdata…'); return; }
+    current = road;
+    state.limit = road ? road.limit : null;
+    $('road').textContent = road && road.name ? road.name : '';
+    setStatus(!road ? 'Ingen bilväg hittad här'
+      : road.limit === null ? 'Hastigheten saknas i kartan för den här vägen' : '');
+    render();
+  }
 
   function onPosition(pos) {
-    var c = pos.coords, lat = c.latitude, lon = c.longitude, now = Date.now();
+    var c = pos.coords, lat = c.latitude, lon = c.longitude;
     if (gpsProblem) { gpsProblem = false; setStatus(''); }
 
     var mps = (typeof c.speed === 'number' && c.speed >= 0) ? c.speed : null;
@@ -322,36 +360,24 @@
     }
     prevPos = { lat: lat, lon: lon, t: pos.timestamp };
     state.speed = mps === null ? null : Math.round(mps * 3.6);
+    lastPos = { lat: lat, lon: lon };
     render();
+    updateRoad();
+  }
 
-    var moved = last.lat === null ? Infinity : distanceMeters(last.lat, last.lon, lat, lon);
-    var age = now - last.time;
-    var due = moved > REFETCH_DISTANCE_M || age > REFETCH_MAX_AGE_MS;
-    if (!due || fetching || age < MIN_FETCH_GAP_MS) return;
-
-    fetching = true;
-    last = { lat: lat, lon: lon, time: now };
-    fetchRoad(lat, lon).then(function (road) {
-      if (road) {
-        state.limit = road.limit;
-        $('road').textContent = road.name || '';
-        setStatus(road.limit === null ? 'Hastigheten saknas i kartan för den här vägen' : '');
-      } else {
-        state.limit = null;
-        $('road').textContent = '';
-        setStatus('Ingen bilväg hittad här');
+  function checkData() {
+    fetch('tiles/meta.json', { cache: 'no-store' }).then(function (res) {
+      if (res.status === 404) {
+        dataMissing = true;
+        setStatus('Kartdatan byggs fortfarande. Försök igen om en stund.');
       }
-      render();
-    }).catch(function () {
-      setStatus('Ingen kontakt med kartan – försöker igen');
-      last.time = now - REFETCH_MAX_AGE_MS + MIN_FETCH_GAP_MS; // försök igen snart
-    }).then(function () { fetching = false; });
+    }).catch(function () {});
   }
 
   function onError(err) {
     if (err.code === 1) {
       setStatus('Skyltkoll behöver din plats. Gå till Inställningar → Integritet → Platstjänster → Safari-webbplatser och välj "När appen används".');
-    } else if (state.speed === null && $('road').textContent === '') {
+    } else if (!lastPos) {
       gpsProblem = true;
       setStatus('Hittar ingen GPS-signal just nu…');
     }
@@ -361,6 +387,7 @@
     $('startScreen').hidden = true;
     $('driveScreen').hidden = false;
     keepAwake();
+    checkData();
     if (!('geolocation' in navigator)) { setStatus('Den här telefonen saknar GPS-stöd.'); return; }
     navigator.geolocation.watchPosition(onPosition, onError, {
       enableHighAccuracy: true, maximumAge: 0
